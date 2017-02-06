@@ -29,7 +29,7 @@ function draw() {
   maze.show(rowHeight, colWidth);
 
   if (runner.finished) {
-    runner.draw(rowHeight, colWidth);
+    runner.drawFinalPath(rowHeight, colWidth);
   } else {
     runner.findPath();
     runner.draw(rowHeight, colWidth);

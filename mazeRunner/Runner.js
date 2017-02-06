@@ -1,48 +1,8 @@
 function Runner(_maze, _start, _end) {
-  this.findLowestNode = function(nodeSet, scores) {
-    var lowestNode;
-
-    for (var i = 0, lowestScore = Infinity; i < nodeSet.length; i++) {
-      var thisNode = nodeSet[i];
-      var thisScore = scores[thisNode.x][thisNode.y];
-      if (thisScore < lowestScore) {
-        lowestScore = thisScore;
-        lowestNode = thisNode;
-      }
-    }
-
-    return lowestNode;
-  }
-
-  this.removeNode = function(nodeSet, toRemove) {
-    for (var i = 0; i < nodeSet.length; i++) {
-      var thisNode = nodeSet[i];
-      if (thisNode.x == toRemove.x && thisNode.y == toRemove.y) {
-        nodeSet.splice(i, 1);
-        break;
-      }
-    }
-  }
-
-  this.addNode = function(nodeSet, toAdd) {
-    nodeSet.push(toAdd);
-  }
-
-  this.isInSet = function(nodeSet, nodeToFind) {
-    for (var i = 0; i < nodeSet.length; i++) {
-      var thisNode = nodeSet[i];
-      if (thisNode.x == nodeToFind.x && thisNode.y == nodeToFind.y) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   this.findPath = function() {
     if (this.openSet.length > 0) {
       // Find the node in the openSet with the lowest f()
-      var lowestOpenNode = this.findLowestNode(this.openSet, this.fScores);
+      var lowestOpenNode = Utils.findLowestInSet(this.openSet, this.fScores);
 
       this.current = lowestOpenNode;
 
@@ -54,10 +14,10 @@ function Runner(_maze, _start, _end) {
 
 
       // Remove the lowest from the openSet
-      this.removeNode(this.openSet, lowestOpenNode);
+      Utils.removeNode(this.openSet, lowestOpenNode);
 
       // Add the lowest to the closedSet
-      this.addNode(this.closedSet, lowestOpenNode);
+      Utils.addNode(this.closedSet, lowestOpenNode);
 
       // Get neighbours of the lowest
       var neighbours = this.maze.getNeighboursOf(lowestOpenNode);
@@ -66,14 +26,14 @@ function Runner(_maze, _start, _end) {
       for (var i = 0, lowestG = Infinity; i < neighbours.length; i++) {
         var thisNeighbour = neighbours[i];
 
-        if (this.isInSet(this.closedSet, thisNeighbour)) {
+        if (Utils.isInSet(this.closedSet, thisNeighbour)) {
           continue;
         }
 
         var thisNeighbourG = this.gScores[lowestOpenNode.x][lowestOpenNode.y] + 1;
 
-        if (!this.isInSet(this.openSet, thisNeighbour)) {
-          this.addNode(this.openSet, thisNeighbour);
+        if (!Utils.isInSet(this.openSet, thisNeighbour)) {
+          Utils.addNode(this.openSet, thisNeighbour);
         } else if (thisNeighbourG >= lowestG) {
           continue;
         }
@@ -101,41 +61,83 @@ function Runner(_maze, _start, _end) {
       end = cameFrom[end.x][end.y];
       path.push(end);
     }
+
+    console.log(path);
+
     return path;
   }
 
   this.draw = function(rowHeight, colWidth) {
-    if (!self.finished) {
-      // Draw openSet
-      for (var i = 0; i < this.openSet.length; i++) {
-        var vect = this.openSet[i];
-        fill(0, 255, 0);
-        rect((vect.x * colWidth) + 4, (vect.y * rowHeight) + 4,
-          colWidth - 8, rowHeight - 8);
-      }
+    // Draw openSet
+    for (var i = 0; i < this.openSet.length; i++) {
+      var vect = this.openSet[i];
+      fill(0, 255, 0);
+      rect((vect.x * colWidth) + 4, (vect.y * rowHeight) + 4,
+        colWidth - 8, rowHeight - 8);
+    }
 
-      // Construct current path
-      var path = [vect];
-      while (this.cameFrom[vect.x] && this.cameFrom[vect.x][vect.y]) {
-        vect = this.cameFrom[vect.x][vect.y];
-        path.push(vect);
-      }
+    // Construct current path
+    var path = [vect];
+    while (this.cameFrom[vect.x] && this.cameFrom[vect.x][vect.y]) {
+      vect = this.cameFrom[vect.x][vect.y];
+      path.push(vect);
+    }
 
-      // Draw current path
-      for (var i = 0; i < path.length - 1; i++) {
-        var vect = path[i];
-        var vect2 = path [i + 1]
-        stroke(0, 0, 255);
-        line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
-          (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
-      }
-    } else {
-      for (var i = 0; i < this.finalPath.length - 1; i++) {
-        var vect = this.finalPath[i];
-        var vect2 = this.finalPath [i + 1]
-        stroke(0, 0, 255);
-        line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
-          (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
+    // Draw current path
+    for (var i = 0; i < path.length - 1; i++) {
+      var vect = path[i];
+      var vect2 = path [i + 1]
+      stroke(0, 0, 255);
+      line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
+        (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
+    }
+  }
+
+  this.drawFinalPath = function(rowHeight, colWidth) {
+    stroke(0, 0, 255);
+    fill(0, 0, 255);
+    for (var i = 0; i < this.finalPath.length - 1; i++) {
+      var vect = this.finalPath[i];
+      var vect2 = this.finalPath [i + 1]
+      line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
+        (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
+
+      if (vect2.y > vect.y) {
+        triangle(
+          vect2.x * colWidth + (5 * colWidth)/12,
+          vect2.y * rowHeight + rowHeight/12,
+          vect2.x * colWidth + (7 * colWidth)/12,
+          vect2.y * rowHeight + rowHeight/12,
+          vect.x * colWidth + colWidth/2,
+          vect.y * rowHeight + (11 * rowHeight)/12
+        );
+      } else if (vect2.y < vect.y) {
+        triangle(
+          vect2.x * colWidth + (5 * colWidth)/12,
+          vect2.y * rowHeight + (11 * rowHeight)/12,
+          vect2.x * colWidth + (7 * colWidth)/12,
+          vect2.y * rowHeight + (11 * rowHeight)/12,
+          vect.x * colWidth + colWidth/2,
+          vect.y * rowHeight + rowHeight/12
+        );
+      } else if (vect2.x > vect.x) {
+        triangle(
+          vect2.x * colWidth + colWidth/12,
+          vect2.y * rowHeight + (5 * rowHeight)/12,
+          vect2.x * colWidth + colWidth/12,
+          vect2.y * rowHeight + (7 * rowHeight)/12,
+          vect.x * colWidth + (11 * colWidth)/12,
+          vect.y * rowHeight + rowHeight/2
+        );
+      } else {
+        triangle(
+          vect2.x * colWidth + (11 * colWidth)/12,
+          vect2.y * rowHeight + (5 * rowHeight)/12,
+          vect2.x * colWidth + (11 * colWidth)/12,
+          vect2.y * rowHeight + (7 * rowHeight)/12,
+          vect.x * colWidth + colWidth/12,
+          vect.y * rowHeight + rowHeight/2
+        );
       }
     }
   }
