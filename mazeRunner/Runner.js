@@ -40,14 +40,16 @@ function Runner(_maze, _start, _end) {
   }
 
   this.findPath = function() {
-    while (this.openSet.length > 0) {
+    if (this.openSet.length > 0) {
       // Find the node in the openSet with the lowest f()
       var lowestOpenNode = this.findLowestNode(this.openSet, this.fScores);
 
+      this.current = lowestOpenNode;
+
       // If we're at the goal, stop
       if (lowestOpenNode.x == this.end.x && lowestOpenNode.y == this.end.y) {
-        var path = this.reconstructPath(this.cameFrom, lowestOpenNode);
-        return path;
+        this.finished = true;
+        this.finalPath = this.reconstructPath(this.cameFrom, lowestOpenNode);
       }
 
 
@@ -86,9 +88,10 @@ function Runner(_maze, _start, _end) {
         this.fScores[thisNeighbour.x] = this.fScores[thisNeighbour.x] || {};
         this.fScores[thisNeighbour.x][thisNeighbour.y] = thisNeighbourG + maze.heuristicScore(thisNeighbour, this.end);
       }
+    } else {
+      this.finished = true;
+      this.finalPath = [];
     }
-
-    return [];
   }
 
   this.reconstructPath = function(cameFrom, end) {
@@ -101,17 +104,56 @@ function Runner(_maze, _start, _end) {
     return path;
   }
 
+  this.draw = function(rowHeight, colWidth) {
+    if (!self.finished) {
+      // Draw openSet
+      for (var i = 0; i < this.openSet.length; i++) {
+        var vect = this.openSet[i];
+        fill(0, 255, 0);
+        rect((vect.x * colWidth) + 4, (vect.y * rowHeight) + 4,
+          colWidth - 8, rowHeight - 8);
+      }
+
+      // Construct current path
+      var path = [vect];
+      while (this.cameFrom[vect.x] && this.cameFrom[vect.x][vect.y]) {
+        vect = this.cameFrom[vect.x][vect.y];
+        path.push(vect);
+      }
+
+      // Draw current path
+      for (var i = 0; i < path.length - 1; i++) {
+        var vect = path[i];
+        var vect2 = path [i + 1]
+        stroke(0, 0, 255);
+        line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
+          (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
+      }
+    } else {
+      for (var i = 0; i < this.finalPath.length - 1; i++) {
+        var vect = this.finalPath[i];
+        var vect2 = this.finalPath [i + 1]
+        stroke(0, 0, 255);
+        line((vect.x * colWidth) + colWidth/2, (vect.y * rowHeight) + rowHeight/2,
+          (vect2.x * colWidth) + colWidth/2, (vect2.y * rowHeight) + rowHeight/2);
+      }
+    }
+  }
+
   this.maze = maze;
   this.start = _start;
   this.end = _end;
   this.closedSet = [];
   this.cameFrom = {};
   this.openSet = [this.start];
+  this.current = this.start;
   this.gScores = {
     0: {
       0: 0
     }
   };
+  this.finished = false;
+  this.finalPath = [];
 
   this.fScores = {
     0: {
